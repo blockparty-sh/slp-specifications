@@ -4,8 +4,8 @@
 
 # URI Scheme Specificaton
 
-#### Version: 0.2
-#### Date published: 5-6-2019
+#### Version: 0.3
+#### Date published: 1-18-2019
 
 
 
@@ -37,10 +37,10 @@ Elements of the query component may contain characters outside the valid range. 
 
 | Placeholder  | Format                                                       |
 | ------------ | ------------------------------------------------------------ |
-| slpurn       | = "simpleledger:" address [ "?" params ]                     |
+| slpurn       | = "simpleledger:" [ address / cashsigndata ] [ "?" params ]  |
 | address      | = *slpaddr                                                   |
 | params       | = param [ "&" params ]                                       |
-| param        | = [ amountparam / multiamounts / labelparam / messageparam / otherparam / reqparam ] |
+| param        | = [ amountparam / multiamounts / labelparam / messageparam / otherparam / reqparam / cashsign-type / cashsign-data / cashsign-callbackurl ] |
 | amountparam  | = "amount=" *digit [ "." *digit ] [ tokenid ]                |
 | multiamounts | = multiamount [ "&" multiamounts ]                           |
 | multiamount  | = "amount" *uniquechar "=" *digit [ "." *digit ] [ tokenid ] |
@@ -49,6 +49,9 @@ Elements of the query component may contain characters outside the valid range. 
 | tokenflag    | = [ "isgroup" / *qchar ]                                     |
 | labelparam   | = "label=" *qchar                                            |
 | messageparam | = "message=" *qchar                                          |
+| cashsign-type | = [ utf8 / bytes / txn ]                                    |
+| cashsign-data | = "0x" *hexchar                                             |
+| cashsign-callbackurl | = "https://" *qchar                                  |
 | otherparam   | = qchar *qchar [ "=" *qchar ]                                |
 | reqparam     | = "req-" qchar *qchar [ "=" *qchar ]                         |
 
@@ -65,6 +68,8 @@ Elements of the query component may contain characters outside the valid range. 
 
 This section is non-normative and does not cover all possible syntax.
 Please see the BNF grammar above for the normative syntax.
+
+#### Address
 
 * **Just the address:**
   * `simpleledger:qqmtw4c35mpv5rcjnnsrskpxvzajyq3f9ygldn8fj0`
@@ -91,6 +96,45 @@ Please see the BNF grammar above for the normative syntax.
   * `simpleledger:qqmtw4c35mpv5rcjnnsrskpxvzajyq3f9ygldn8fj0?somethingyoudontunderstand=50&somethingelseyoudontget=999`
 
 
+#### CashSign
+
+We use `cashsign` in the parameter names in the hope that wallets which do not yet support CashSign will be able to show the user an error message regarding the parameter "cashsign-X" not being supported.
+
+
+`cashsign-type`: can be message (utf8, bytes) or transaction (txn), more can be added in future
+
+`cashsign-data`: contains the payload, can be a message or a transaction. prefixed with 0x
+
+`cashsign-callbackurl`: url for the wallet to post the signed data back to.
+
+* **Sign arbitrary message**
+  * `simpleledger:qqmtw4c35mpv5rcjnnsrskpxvzajyq3f9ygldn8fj0?cashsign-type=message&cashsign-data=0x00001111DEADBEEF9999cashsign-callbackurl=https://example.com/cashsigncallback`
+
+Will allow for user to see this data in wallet:
+
+* Request for signing message (Provide confirmation and cancel box)
+
+* Inform user that this data will be signed and returned to $cashsign-callbackurl
+
+
+This should be UTF-8 and the message should be shown in a textbox for the user to inspect. 
+
+
+* **Sign transaction**
+  * `simpleledger:qqmtw4c35mpv5rcjnnsrskpxvzajyq3f9ygldn8fj0?cashsign-type=transaction&cashsign-data=0x000000000010101010000000010100fffff&cashsign-callbackurl=https://example.com/cashsigncallback`
+
+  Will allow for user to see a graphical representation of a transaction and be able to sign some or all of the inputs.
+
+* Request for signing transaction (Provide confirmation and cancel box)
+
+* Inform user that the transaction will be signed and returned to $cashsign-callbackurl
+
+* Show a transaction renderer with the following properties:
+ * Our own inputs must be colored
+ * Our own outputs must be colored similarly
+ * Our change should be visible so that users can easily see how much they are actually spending.
+
+
 
 ## Reference Implementations
 
@@ -99,3 +143,8 @@ Electron Cash SLP - WIP
 
 ### Libraries
 None currently
+
+## CashSign Advice for Implementors
+
+### ![Message Signing](images/Message_Signing.png)
+### ![Transaction Signing](images/Transaction_Signing.png)
